@@ -1,0 +1,192 @@
+// prisma/schema.prisma
+// Sakhi Platform — MySQL Schema
+// Run: npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS ─────────────────────────────────────────────────────
+model User {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  password      String
+  city          String?   @db.VarChar(100)
+  state         String?   @db.VarChar(100)
+  bio           String?   @db.Text
+  avatar_color  String    @default("#E8621A") @db.VarChar(10)
+  preferred_lang String   @default("en") @db.VarChar(10)
+  is_verified   Boolean   @default(false)
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  skills        Skill[]
+  comments      Comment[]
+  saves         Save[]
+  followers     Follow[]  @relation("Following")
+  following     Follow[]  @relation("Follower")
+  analytics     SkillView[]
+  voice_notes   VoiceNote[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ─── CATEGORIES ────────────────────────────────────────────────
+model Category {
+  id          String   @id @db.VarChar(50)
+  name_en     String   @db.VarChar(100)
+  name_hi     String   @db.VarChar(100)
+  name_bn     String   @db.VarChar(100)
+  name_te     String   @db.VarChar(100)
+  name_mr     String   @db.VarChar(100)
+  name_ta     String   @db.VarChar(100)
+  emoji       String   @db.VarChar(10)
+  description String?  @db.Text
+  sort_order  Int      @default(0)
+  skills      Skill[]
+
+  @@map("categories")
+}
+
+// ─── SKILLS ────────────────────────────────────────────────────
+model Skill {
+  id          String    @id @default(uuid())
+  title       String    @db.VarChar(255)
+  subtitle    String    @db.VarChar(400)
+  body        String    @db.Text
+  category_id String
+  tags        String    @default("") @db.Text
+  language    String    @default("Hindi") @db.VarChar(50)
+  region      String?   @db.VarChar(100)
+  read_time   Int       @default(5)
+  saves_count Int       @default(0)
+  views_count Int       @default(0)
+  is_featured Boolean   @default(false)
+  is_published Boolean  @default(true)
+  author_id   String
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  // Relations
+  author      User      @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [category_id], references: [id])
+  comments    Comment[]
+  saves       Save[]
+  voice_notes VoiceNote[]
+  views       SkillView[]
+
+  @@index([category_id])
+  @@index([author_id])
+  @@index([is_featured, is_published])
+  @@index([created_at(sort: Desc)])
+  @@map("skills")
+}
+
+// ─── COMMENTS ──────────────────────────────────────────────────
+model Comment {
+  id         String   @id @default(uuid())
+  body       String   @db.Text
+  skill_id   String
+  author_id  String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  skill  Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@index([skill_id])
+  @@map("comments")
+}
+
+// ─── SAVES (bookmarks) ─────────────────────────────────────────
+model Save {
+  id         String   @id @default(uuid())
+  user_id    String
+  skill_id   String
+  created_at DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, skill_id])
+  @@index([user_id])
+  @@map("saves")
+}
+
+// ─── FOLLOWS ───────────────────────────────────────────────────
+model Follow {
+  id           String   @id @default(uuid())
+  follower_id  String
+  following_id String
+  created_at   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, following_id])
+  @@map("follows")
+}
+
+// ─── VOICE NOTES ───────────────────────────────────────────────
+model VoiceNote {
+  id          String    @id @default(uuid())
+  skill_id    String
+  author_id   String
+  file_path   String    @db.VarChar(500)
+  file_size   Int
+  duration_s  Int       @default(0)
+  mime_type   String    @db.VarChar(100)
+  language    String    @default("Hindi") @db.VarChar(50)
+  transcript  String?   @db.Text
+  plays_count Int       @default(0)
+  created_at  DateTime  @default(now())
+
+  skill  Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@index([skill_id])
+  @@map("voice_notes")
+}
+
+// ─── ANALYTICS: SKILL VIEWS ────────────────────────────────────
+model SkillView {
+  id         String   @id @default(uuid())
+  skill_id   String
+  user_id    String?
+  ip_hash    String?  @db.VarChar(64)
+  country    String?  @db.VarChar(10)
+  referrer   String?  @db.VarChar(255)
+  viewed_at  DateTime @default(now())
+
+  skill Skill  @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([skill_id, viewed_at])
+  @@index([viewed_at])
+  @@map("skill_views")
+}
+
+// ─── ANALYTICS: PLATFORM STATS (daily snapshot) ────────────────
+model DailyStats {
+  id              String   @id @default(uuid())
+  date            DateTime @unique @db.Date
+  total_users     Int      @default(0)
+  new_users       Int      @default(0)
+  total_skills    Int      @default(0)
+  new_skills      Int      @default(0)
+  total_views     Int      @default(0)
+  total_saves     Int      @default(0)
+  total_comments  Int      @default(0)
+  active_users    Int      @default(0)
+
+  @@map("daily_stats")
+}

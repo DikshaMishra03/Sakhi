@@ -1,0 +1,15 @@
+{
+  "name": "sakhi-platform",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Sakhi — Full-stack life skills platform for women across India",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "db:setup": "cd backend && npm run db:push && npm run db:seed",
+    "build": "cd frontend && npm run build"
+  },
+  "author": "Diksha Mishra",
+  "license": "MIT"
+}
