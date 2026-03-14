@@ -155,6 +155,6 @@ daily_stats    → id, date, total_users, new_users, total_skills,
 
 Built as a portfolio project to demonstrate production-level full-stack engineering — not just CRUD, but real features people actually use.
 
-**Diksha Mishra** · 3rd Year B.Tech · GitHub: [@yourusername](https://github.com)
+**Diksha Mishra** · 3rd Year B.Tech · GitHub: [@yourusername]([https://github.com](https://github.com/DikshaMishra03))
 
 *"I built the platform I wish existed when I was trying to find my grandfather's chai masala recipe after she was gone."*
