@@ -40,7 +40,7 @@ Full UI translation in **English, Hindi (हिंदी), Bengali (বাংল
 - **Per-skill bar chart**: compare your skills' performance
 - Daily stats snapshot via cron job (node-cron)
 
-### 🗄️ PostgreSQL + Prisma ORM
+### 🗄️ MySQL + Prisma ORM
 - Full relational schema with proper foreign keys
 - Indexes on all queried fields
 - Cascade deletes for data integrity
