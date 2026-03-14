@@ -134,7 +134,7 @@ export default function ExplorePage() {
           </button>
           {Array.from({ length: pagination.pages }, (_, i) => i + 1).filter(p => Math.abs(p - page) <= 2).map(p => (
             <button key={p} onClick={() => setParam('page', String(p))}
-              style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '0.87rem', fontWeight: p === page ? 600 : 400, background: p === page ? 'var(--saffron)' : 'white', color: p === page ? 'white' : 'var(--ink-mid)', border: `1.5px solid ${p === page ? 'var(--saffron)' : 'var(--cream)'}` }}>
+              style={{ width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '0.87rem', fontWeight: p === page ? 600 : 400, background: p === page ? 'var(--saffron)' : 'white', color: p === page ? 'white' : 'var(--ink-mid)', border: `1.5px solid ${p === page ? 'var(--saffron)' : 'var(--cream)'}` }}>
               {p}
             </button>
           ))}

@@ -61,6 +61,7 @@ export default function Layout() {
           {[
             { to: '/explore', label: 'Explore', icon: <BookOpen size={15} /> },
             { to: '/analytics', label: 'Analytics', icon: <BarChart2 size={15} /> },
+            ...(user ? [
               { to: '/saved', label: 'Saved', icon: <Heart size={15} /> },
               { to: '/write', label: 'Write', icon: <PenLine size={15} /> },
             ] : []),
