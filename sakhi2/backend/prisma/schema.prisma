@@ -64,7 +64,7 @@ model Skill {
   subtitle    String    @db.VarChar(400)
   body        String    @db.Text
   category_id String
-  tags        String    @default("") @db.Text
+  tags        String    @db.Text
   language    String    @default("Hindi") @db.VarChar(50)
   region      String?   @db.VarChar(100)
   read_time   Int       @default(5)

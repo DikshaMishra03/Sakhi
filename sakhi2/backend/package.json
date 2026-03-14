@@ -29,10 +29,12 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "pg": "^8.13.1",
-    "prisma": "^5.22.0",
     "uuid": "^10.0.0",
     "winston": "^3.17.0"
   },
   "author": "Diksha Mishra",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
 }
