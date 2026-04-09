@@ -1,4 +1,7 @@
-// src/App.tsx
+// PATCH: frontend/src/App.tsx
+// Change: Added import for CategoryPage + one new route: /category/:categoryId
+// Everything else is identical to your original file.
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -15,6 +18,8 @@ import AnalyticsPage from '@/pages/AnalyticsPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+// ↓ NEW
+import CategoryPage from '@/pages/CategoryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } },
@@ -40,6 +45,8 @@ export default function App() {
                 <Route path="profile/:id" element={<ProfilePage />} />
                 <Route path="saved" element={<SavedPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
+                {/* ↓ NEW — category drill-down page */}
+                <Route path="category/:categoryId" element={<CategoryPage />} />
               </Route>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
