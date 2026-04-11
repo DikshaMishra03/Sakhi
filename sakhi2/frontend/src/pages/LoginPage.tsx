@@ -130,7 +130,7 @@ export function RegisterPage() {
     <AuthLayout title="Join Sakhi" subtitle="Share your knowledge with women across India">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
         {[
-          { k: 'name', label: 'YOUR NAME *', placeholder: 'e.g. Diksha Mishra', type: 'text' },
+          { k: 'name', label: 'YOUR NAME *', placeholder: 'e.g. Priya Sharma', type: 'text' },
           { k: 'email', label: 'EMAIL *', placeholder: 'your@email.com', type: 'email' },
         ].map(({ k, label, placeholder, type }) => (
           <div key={k}>

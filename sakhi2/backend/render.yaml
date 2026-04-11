@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: sakhi-backend
+    env: node
+    rootDir: sakhi2/backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: npx prisma db push && node src/server.js
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_FYQjancGZT86@ep-solitary-block-a1c29uvg.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      - key: JWT_SECRET
+        value: sakhi_super_secret_key_123456789_production
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        value: "*"

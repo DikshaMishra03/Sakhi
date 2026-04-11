@@ -27,7 +27,7 @@ export const getSkills = async (req, res, next) => {
           { body: { contains: search, mode: 'insensitive' } },
           { region: { contains: search, mode: 'insensitive' } },
           { language: { contains: search, mode: 'insensitive' } },
-          { tags: { contains: search.toLowerCase() } },
+          { tags: { has: search.toLowerCase() } },
         ],
       }),
     };
