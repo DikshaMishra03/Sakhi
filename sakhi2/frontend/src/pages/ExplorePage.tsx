@@ -37,7 +37,11 @@ export default function ExplorePage() {
 
   const skills = data?.data?.data || [];
   const pagination = data?.data?.pagination || {};
-  const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...(categoriesData?.data?.data || [])];
+  const rawCats = (categoriesData?.data?.data || []).map((c: any) => ({
+  ...c,
+  name: typeof c.name === 'object' ? (c.name?.en || c.name?.hi || Object.values(c.name)[0]) : c.name,
+}));
+const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...rawCats];
 
   const setParam = (key: string, value: string) => {
     const p = new URLSearchParams(searchParams);

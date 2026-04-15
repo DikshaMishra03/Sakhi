@@ -35,8 +35,13 @@ export default function CategoryPage() {
   const pagination = data?.data?.pagination || {};
 
   // FIX: use category.name only (not name_en which doesn't exist)
-  const catName  = category?.name || categoryId;
-  const catEmoji = category?.emoji || '📚';
+  const catName  = typeof category?.name === 'object'
+  ? (category.name?.en || category.name?.hi || Object.values(category.name)[0] as string)
+  : (category?.name || categoryId);
+
+  const catEmoji = typeof category?.emoji === 'object'
+  ? Object.values(category.emoji)[0] as string
+  : (category?.emoji || '📚');
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '3rem 2rem' }}>
