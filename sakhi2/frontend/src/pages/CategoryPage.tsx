@@ -1,8 +1,3 @@
-// NEW FILE: frontend/src/pages/CategoryPage.tsx
-// Route: /category/:categoryId
-// Shows all skills in a given category with sort + pagination.
-// Uses existing skillsApi.getAll — no backend changes needed.
-
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +18,6 @@ export default function CategoryPage() {
   const [sort, setSort] = useState('recent');
   const [page, setPage] = useState(1);
 
-  // Fetch category info (for name + emoji)
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => skillsApi.getCategories(),
@@ -31,7 +25,6 @@ export default function CategoryPage() {
 
   const category = categoriesData?.data?.data?.find((c: any) => c.id === categoryId);
 
-  // Fetch skills in this category
   const { data, isLoading } = useQuery({
     queryKey: ['skills', categoryId, sort, page],
     queryFn: () => skillsApi.getAll({ category_id: categoryId, sort, page, limit: 12 }),
@@ -41,12 +34,12 @@ export default function CategoryPage() {
   const skills     = data?.data?.data || [];
   const pagination = data?.data?.pagination || {};
 
-  const catName  = category?.name_en || category?.name || categoryId;
-  const catEmoji = category?.emoji   || '📚';
+  // FIX: use category.name only (not name_en which doesn't exist)
+  const catName  = category?.name || categoryId;
+  const catEmoji = category?.emoji || '📚';
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '3rem 2rem' }}>
-      {/* ── Back link ───────────────────────────────────────────── */}
       <button
         onClick={() => navigate('/explore')}
         style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-soft)', fontSize: '0.87rem', fontFamily: 'var(--font-sans)', marginBottom: '1.75rem' }}
@@ -54,7 +47,6 @@ export default function CategoryPage() {
         <ArrowLeft size={15} /> Back to Explore
       </button>
 
-      {/* ── Header ──────────────────────────────────────────────── */}
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>{catEmoji}</span>
@@ -69,7 +61,6 @@ export default function CategoryPage() {
         </p>
       </div>
 
-      {/* ── Sort bar ────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1.5px solid var(--cream)', borderRadius: '2rem', padding: '0.5rem 1rem' }}>
           <SlidersHorizontal size={14} color="var(--ink-soft)" />
@@ -83,7 +74,6 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────── */}
       {isLoading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
           {Array(6).fill(0).map((_, i) => (
@@ -118,7 +108,6 @@ export default function CategoryPage() {
         </div>
       )}
 
-      {/* ── Pagination ──────────────────────────────────────────── */}
       {pagination.pages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '3rem' }}>
           <button

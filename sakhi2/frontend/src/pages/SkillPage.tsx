@@ -1,12 +1,12 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Heart, Clock, Eye, ArrowLeft, Trash2, Send, BookOpen } from 'lucide-react';
+import { Heart, Clock, Eye, ArrowLeft, Trash2, Send } from 'lucide-react';
 import { skillsApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 import VoiceNoteSection from '@/components/voice/VoiceNoteSection';
-
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; emoji: string }> = {
   kitchen:   { bg: '#FDF0E8', text: '#E8621A', emoji: '🍛' },
@@ -22,7 +22,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; emoji: string 
 function renderBody(text: string) {
   return text
     .split('\n')
-    .map((line, i) => {
+    .map((line) => {
       if (line.startsWith('**') && line.endsWith('**')) {
         return `<h3 style="font-family:var(--font-serif);font-size:1.15rem;color:var(--ink);margin:1.5rem 0 0.4rem">${line.slice(2, -2)}</h3>`;
       }
@@ -72,7 +72,10 @@ export default function SkillPage() {
 
   const deleteCommentMutation = useMutation({
     mutationFn: (commentId: string) => skillsApi.deleteComment(id!, commentId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['skill', id] }); toast.success('Comment deleted'); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['skill', id] });
+      toast.success('Comment deleted');
+    },
   });
 
   const deleteMutation = useMutation({
@@ -126,7 +129,7 @@ export default function SkillPage() {
           </div>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--ink)' }}>{skill.author?.name}</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--ink-soft)' }}>{skill.author?.city}, {skill.author?.state}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--ink-soft)' }}>{skill.author?.city}{skill.author?.state ? `, ${skill.author?.state}` : ''}</div>
           </div>
         </Link>
         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -136,13 +139,15 @@ export default function SkillPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
             <Eye size={14} /> {skill.views?.toLocaleString()} views
           </div>
-          <button onClick={() => { if (!user) { toast.error('Login to save'); return; } saveMutation.mutate(); }}
+          <button
+            onClick={() => { if (!user) { toast.error('Login to save'); return; } saveMutation.mutate(); }}
             style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 1rem', borderRadius: '2rem', border: `1.5px solid ${saved ? 'var(--rose)' : 'var(--cream)'}`, background: saved ? 'var(--rose-light)' : 'white', color: saved ? 'var(--rose)' : 'var(--ink-soft)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s' }}>
             <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
             {skill.saves_count?.toLocaleString()}
           </button>
           {isOwner && (
-            <button onClick={() => { if (confirm('Delete this skill?')) deleteMutation.mutate(); }}
+            <button
+              onClick={() => { if (confirm('Delete this skill?')) deleteMutation.mutate(); }}
               style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.8rem', borderRadius: '2rem', border: '1.5px solid #fdd', background: '#fff5f5', color: '#c9506a', fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
               <Trash2 size={13} /> Delete
             </button>
@@ -179,7 +184,6 @@ export default function SkillPage() {
           {comments.length} {comments.length === 1 ? 'response' : 'responses'}
         </h3>
 
-        {/* Add comment */}
         {user ? (
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', alignItems: 'flex-start' }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'white', flexShrink: 0, marginTop: 4 }}>
@@ -191,7 +195,8 @@ export default function SkillPage() {
                 style={{ width: '100%', padding: '0.85rem 1rem', border: '1.5px solid var(--cream)', borderRadius: 12, fontSize: '0.9rem', fontFamily: 'var(--font-sans)', color: 'var(--ink)', background: 'white', resize: 'vertical', minHeight: 90, outline: 'none', lineHeight: 1.6 }}
                 onFocus={e => (e.target.style.borderColor = 'var(--saffron)')}
                 onBlur={e => (e.target.style.borderColor = 'var(--cream)')} />
-              <button onClick={() => { if (!comment.trim()) return; commentMutation.mutate(); }}
+              <button
+                onClick={() => { if (!comment.trim()) return; commentMutation.mutate(); }}
                 disabled={!comment.trim() || commentMutation.isPending}
                 style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.25rem', background: 'var(--saffron)', color: 'white', border: 'none', borderRadius: '2rem', cursor: 'pointer', fontSize: '0.87rem', fontWeight: 500, fontFamily: 'var(--font-sans)', opacity: !comment.trim() ? 0.5 : 1 }}>
                 <Send size={13} /> Post response
@@ -204,7 +209,6 @@ export default function SkillPage() {
           </div>
         )}
 
-        {/* Comment list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {comments.map((c: any) => (
             <div key={c.id} style={{ display: 'flex', gap: '0.75rem', padding: '1rem', background: 'white', borderRadius: 12, border: '1px solid var(--cream)' }}>
@@ -214,7 +218,9 @@ export default function SkillPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
                   <span style={{ fontSize: '0.87rem', fontWeight: 600, color: 'var(--ink)' }}>{c.author?.name}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                  </span>
                   {user?.id === c.author?.id && (
                     <button onClick={() => deleteCommentMutation.mutate(c.id)}
                       style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-soft)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>

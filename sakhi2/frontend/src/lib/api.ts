@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || '') + '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -23,6 +23,30 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// ── Skill type ────────────────────────────────────────────────
+export interface Skill {
+  id: string;
+  title: string;
+  subtitle: string;
+  body: string;
+  category: string;
+  tags: string[];
+  language: string;
+  region: string;
+  read_time: number;
+  views: number;
+  saves_count: number;
+  is_featured: boolean;
+  created_at: string;
+  author: {
+    id: string;
+    name: string;
+    city: string;
+    state: string;
+    avatar_color: string;
+  };
+}
 
 // ── Auth ──────────────────────────────────────────────────────
 export const authApi = {
@@ -49,7 +73,6 @@ export const skillsApi = {
   getStats: () => api.get('/skills/stats'),
   addComment: (id: string, body: string) => api.post(`/skills/${id}/comments`, { body }),
   deleteComment: (skillId: string, commentId: string) => api.delete(`/skills/${skillId}/comments/${commentId}`),
-  // Voice notes
   getVoiceNotes: (skillId: string) => api.get(`/skills/${skillId}/voice`),
   uploadVoiceNote: (skillId: string, formData: FormData) =>
     api.post(`/skills/${skillId}/voice`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
@@ -64,7 +87,7 @@ export const analyticsApi = {
 
 // ── Voice ─────────────────────────────────────────────────────
 export const voiceApi = {
-  getStreamUrl: (id: string) => `/api/voice/${id}/stream`,
+  getStreamUrl: (id: string) => `${api.defaults.baseURL}/voice/${id}/stream`,
   delete: (id: string) => api.delete(`/voice/${id}`),
 };
 
