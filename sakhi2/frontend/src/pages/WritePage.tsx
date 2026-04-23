@@ -43,7 +43,7 @@ export default function WritePage() {
         subtitle: s.subtitle ?? '',
         // FIX: body could be null/undefined — default to empty string
         body: s.body ?? '',
-        category: s.category ?? '',
+        category: (typeof s.category === 'object' ? s.category?.id : s.category) ?? '',
         // FIX: tags may be undefined or not an array
         tags: Array.isArray(s.tags) ? s.tags.join(', ') : (s.tags ?? ''),
         language: s.language ?? 'Hindi',
@@ -56,11 +56,15 @@ export default function WritePage() {
     if (!user) navigate('/login');
   }, [user]);
 
-  // FIX: normalise payload — tags must be an array, empty region omitted
+  // FIX: backend expects category_id not category, tags as array, empty region as null
   const buildPayload = () => ({
-    ...form,
+    title: form.title.trim(),
+    subtitle: form.subtitle.trim(),
+    body: form.body.trim(),
+    category_id: form.category,
+    language: form.language,
     tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
-    region: form.region || undefined,
+    region: form.region || null,
   });
 
   const createMutation = useMutation({
