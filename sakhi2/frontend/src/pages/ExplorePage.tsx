@@ -11,6 +11,16 @@ const SORT_OPTIONS = [
   { value: 'views', label: 'Most Viewed' },
 ];
 
+// FIX: safely coerce name/emoji to a plain string
+function toStr(value: any, fallback = ''): string {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    return (value.en ?? value.hi ?? (Object.values(value)[0] as string) ?? fallback);
+  }
+  return String(value);
+}
+
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
@@ -37,11 +47,14 @@ export default function ExplorePage() {
 
   const skills = data?.data?.data || [];
   const pagination = data?.data?.pagination || {};
+
+  // FIX: normalise name/emoji so they are always strings before rendering
   const rawCats = (categoriesData?.data?.data || []).map((c: any) => ({
-  ...c,
-  name: typeof c.name === 'object' ? (c.name?.en || c.name?.hi || Object.values(c.name)[0]) : c.name,
-}));
-const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...rawCats];
+    ...c,
+    name: toStr(c.name, c.id),
+    emoji: toStr(c.emoji, '📚'),
+  }));
+  const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...rawCats];
 
   const setParam = (key: string, value: string) => {
     const p = new URLSearchParams(searchParams);
@@ -59,7 +72,8 @@ const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...ra
           All skills, all <em style={{ color: 'var(--saffron)', fontStyle: 'italic' }}>communities</em>
         </h1>
         <p style={{ color: 'var(--ink-soft)', fontSize: '0.95rem' }}>
-          {pagination.total ? `${pagination.total} skills shared by women across India` : 'Browse skills shared by women across India'}
+          {/* FIX: optional chain on pagination.total */}
+          {pagination.total != null ? `${pagination.total} skills shared by women across India` : 'Browse skills shared by women across India'}
         </p>
       </div>
 
@@ -88,16 +102,18 @@ const categories = [{ id: 'all', name: 'All', emoji: '✨', count: null }, ...ra
         {categories.map((cat: any) => (
           <button key={cat.id} onClick={() => setParam('category', cat.id)} style={{
             display: 'flex', alignItems: 'center', gap: '0.35rem',
-            padding: '0.4rem 1rem', borderRadius: '2rem', border: 'none', cursor: 'pointer',
+            padding: '0.4rem 1rem', borderRadius: '2rem', cursor: 'pointer',
             fontSize: '0.83rem', fontWeight: 500, fontFamily: 'var(--font-sans)',
             background: category === cat.id ? 'var(--saffron)' : 'white',
             color: category === cat.id ? 'white' : 'var(--ink-mid)',
             border: `1.5px solid ${category === cat.id ? 'var(--saffron)' : 'var(--cream)'}`,
             transition: 'all 0.15s',
           }}>
+            {/* FIX: emoji and name are always strings after normalisation */}
             <span>{cat.emoji}</span>
             {cat.name}
-            {cat.count !== null && <span style={{ opacity: 0.65, fontSize: '0.75rem' }}>({cat.count})</span>}
+            {/* FIX: use != null so neither null nor undefined renders the badge */}
+            {cat.count != null && <span style={{ opacity: 0.65, fontSize: '0.75rem' }}>({cat.count})</span>}
           </button>
         ))}
       </div>

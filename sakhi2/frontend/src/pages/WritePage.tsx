@@ -29,7 +29,6 @@ export default function WritePage() {
     category: '', tags: '', language: 'Hindi', region: '',
   });
 
-  // Load existing skill for editing
   const { data: existing } = useQuery({
     queryKey: ['skill', id],
     queryFn: () => skillsApi.getById(id!),
@@ -39,11 +38,20 @@ export default function WritePage() {
   useEffect(() => {
     if (existing?.data?.data?.skill) {
       const s = existing.data.data.skill;
-      setForm({ title: s.title, subtitle: s.subtitle, body: s.body, category: s.category, tags: s.tags?.join(', '), language: s.language, region: s.region });
+      setForm({
+        title: s.title ?? '',
+        subtitle: s.subtitle ?? '',
+        // FIX: body could be null/undefined — default to empty string
+        body: s.body ?? '',
+        category: s.category ?? '',
+        // FIX: tags may be undefined or not an array
+        tags: Array.isArray(s.tags) ? s.tags.join(', ') : (s.tags ?? ''),
+        language: s.language ?? 'Hindi',
+        region: s.region ?? '',
+      });
     }
   }, [existing]);
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) navigate('/login');
   }, [user]);
@@ -60,7 +68,7 @@ export default function WritePage() {
 
   const updateMutation = useMutation({
     mutationFn: () => skillsApi.update(id!, form as any),
-    onSuccess: (res) => {
+    onSuccess: () => {
       toast.success('Skill updated!');
       qc.invalidateQueries({ queryKey: ['skill', id] });
       navigate(`/skills/${id}`);
@@ -69,15 +77,24 @@ export default function WritePage() {
   });
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-  const wordCount = form.body.trim().split(/\s+/).filter(Boolean).length;
+  // FIX: guard body before splitting/filtering
+  const wordCount = (form.body ?? '').trim().split(/\s+/).filter(Boolean).length;
   const readTime = Math.max(1, Math.ceil(wordCount / 200));
-  const isValid = form.title.length >= 10 && form.subtitle.length >= 10 && form.body.length >= 100 && form.category;
+  const isValid = form.title.length >= 10 && form.subtitle.length >= 10 && (form.body ?? '').length >= 100 && form.category;
 
-  const inputStyle = (focused = false) => ({
-    width: '100%', padding: '0.75rem 1rem', border: `1.5px solid ${focused ? 'var(--saffron)' : 'var(--cream)'}`,
+  const inputStyle = () => ({
+    width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--cream)',
     borderRadius: 10, fontSize: '0.95rem', fontFamily: 'var(--font-sans)', color: 'var(--ink)',
     background: 'white', outline: 'none', transition: 'border-color 0.2s',
   });
+
+  // FIX: preview body renderer guards against undefined/null
+  const previewHtml = (form.body ?? '').split('\n').map(line => {
+    if (line.startsWith('**') && line.endsWith('**')) return `<h3>${line.slice(2, -2)}</h3>`;
+    if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
+    if (line.trim() === '') return '<br>';
+    return `<p>${line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+  }).join('');
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '2rem 2rem 5rem' }}>
@@ -185,14 +202,15 @@ export default function WritePage() {
               <p style={{ fontSize: '1.05rem', color: 'var(--ink-soft)', marginBottom: '1.5rem', lineHeight: 1.65 }}>{form.subtitle}</p>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
                 {form.category && <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem', borderRadius: '2rem', background: 'var(--saffron-pale)', color: 'var(--saffron)', fontWeight: 600 }}>{form.category}</span>}
-                {form.tags.split(',').filter(Boolean).map(t => <span key={t} style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem', borderRadius: '2rem', background: 'var(--paper-warm)', color: 'var(--ink-mid)', border: '1px solid var(--cream)' }}>{t.trim()}</span>)}
+                {/* FIX: index-based key so duplicate tag names don't collide */}
+                {(form.tags ?? '').split(',').filter(Boolean).map((t, i) => (
+                  <span key={`${t.trim()}-${i}`} style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem', borderRadius: '2rem', background: 'var(--paper-warm)', color: 'var(--ink-mid)', border: '1px solid var(--cream)' }}>
+                    {t.trim()}
+                  </span>
+                ))}
               </div>
-              <div className="prose-sakhi" dangerouslySetInnerHTML={{ __html: form.body.split('\n').map(line => {
-                if (line.startsWith('**') && line.endsWith('**')) return `<h3>${line.slice(2,-2)}</h3>`;
-                if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
-                if (line.trim() === '') return '<br>';
-                return `<p>${line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-              }).join('') }} />
+              {/* FIX: previewHtml computed at top from guarded body */}
+              <div className="prose-sakhi" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--ink-soft)' }}>

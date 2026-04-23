@@ -19,7 +19,9 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; emoji: string 
   garden:    { bg: '#D4E8DC', text: '#4A7C59', emoji: '🌱' },
 };
 
-function renderBody(text: string) {
+// FIX: guard against null/undefined body before calling .split()
+function renderBody(text: string | null | undefined): string {
+  if (!text) return '';
   return text
     .split('\n')
     .map((line) => {
@@ -49,7 +51,11 @@ export default function SkillPage() {
   const skill = data?.data?.data?.skill;
   const comments = data?.data?.data?.comments || [];
   const saved = data?.data?.data?.saved;
-  const cat = CATEGORY_COLORS[skill?.category] || { bg: '#FDF0E8', text: '#E8621A', emoji: '✨' };
+  // FIX: skill?.category could be an object if the API returns a nested shape — normalise to string
+  const categoryKey = typeof skill?.category === 'object'
+    ? (skill?.category as any)?.id ?? ''
+    : (skill?.category ?? '');
+  const cat = CATEGORY_COLORS[categoryKey] || { bg: '#FDF0E8', text: '#E8621A', emoji: '✨' };
 
   const saveMutation = useMutation({
     mutationFn: () => skillsApi.toggleSave(id!),
@@ -110,7 +116,7 @@ export default function SkillPage() {
 
       {/* Category badge */}
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: cat.bg, color: cat.text, padding: '0.35rem 0.85rem', borderRadius: '2rem', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-        {cat.emoji} {skill.category}
+        {cat.emoji} {categoryKey}
       </div>
 
       {/* Title */}
@@ -124,7 +130,8 @@ export default function SkillPage() {
       {/* Meta row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', paddingBottom: '1.5rem', borderBottom: '1.5px solid var(--cream)', marginBottom: '2rem' }}>
         <Link to={`/profile/${skill.author?.id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', textDecoration: 'none' }}>
-          <div style={{ width: 42, height: 42, borderRadius: '50%', background: skill.author?.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>
+          {/* FIX: fallback color for avatar */}
+          <div style={{ width: 42, height: 42, borderRadius: '50%', background: skill.author?.avatar_color ?? '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>
             {skill.author?.name?.charAt(0)}
           </div>
           <div>
@@ -134,16 +141,19 @@ export default function SkillPage() {
         </Link>
         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
-            <Clock size={14} /> {skill.read_time} min read
+            {/* FIX: read_time could be undefined */}
+            <Clock size={14} /> {skill.read_time ?? '—'} min read
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
-            <Eye size={14} /> {skill.views?.toLocaleString()} views
+            {/* FIX: optional chain + fallback for views */}
+            <Eye size={14} /> {skill.views?.toLocaleString() ?? 0} views
           </div>
           <button
             onClick={() => { if (!user) { toast.error('Login to save'); return; } saveMutation.mutate(); }}
             style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 1rem', borderRadius: '2rem', border: `1.5px solid ${saved ? 'var(--rose)' : 'var(--cream)'}`, background: saved ? 'var(--rose-light)' : 'white', color: saved ? 'var(--rose)' : 'var(--ink-soft)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s' }}>
             <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
-            {skill.saves_count?.toLocaleString()}
+            {/* FIX: optional chain on saves_count */}
+            {skill.saves_count?.toLocaleString() ?? 0}
           </button>
           {isOwner && (
             <button
@@ -157,14 +167,17 @@ export default function SkillPage() {
 
       {/* Tags */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-        {skill.tags?.map((tag: string) => (
-          <span key={tag} style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '2rem', background: 'var(--paper-warm)', color: 'var(--ink-mid)', border: '1px solid var(--cream)' }}>
+        {/* FIX: index fallback key in case duplicate tag strings exist */}
+        {skill.tags?.map((tag: string, i: number) => (
+          <span key={`${tag ?? ''}-${i}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '2rem', background: 'var(--paper-warm)', color: 'var(--ink-mid)', border: '1px solid var(--cream)' }}>
             {tag}
           </span>
         ))}
-        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '2rem', background: 'var(--turmeric-light)', color: 'var(--turmeric)', border: '1px solid transparent' }}>
-          {skill.language}
-        </span>
+        {skill.language && (
+          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '2rem', background: 'var(--turmeric-light)', color: 'var(--turmeric)', border: '1px solid transparent' }}>
+            {skill.language}
+          </span>
+        )}
         {skill.region && (
           <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '2rem', background: 'var(--green-light)', color: 'var(--green)', border: '1px solid transparent' }}>
             {skill.region}
@@ -172,7 +185,7 @@ export default function SkillPage() {
         )}
       </div>
 
-      {/* Body content */}
+      {/* Body content — FIX: renderBody now guards against undefined/null */}
       <article className="prose-sakhi" dangerouslySetInnerHTML={{ __html: renderBody(skill.body) }}
         style={{ fontSize: '1rem', lineHeight: 1.85, color: 'var(--ink-mid)' }} />
 
@@ -186,8 +199,9 @@ export default function SkillPage() {
 
         {user ? (
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', alignItems: 'flex-start' }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'white', flexShrink: 0, marginTop: 4 }}>
-              {user.name.charAt(0)}
+            {/* FIX: fallback color for logged-in user avatar */}
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: user.avatar_color ?? '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'white', flexShrink: 0, marginTop: 4 }}>
+              {user.name?.charAt(0)}
             </div>
             <div style={{ flex: 1 }}>
               <textarea value={comment} onChange={e => setComment(e.target.value)}
@@ -212,14 +226,16 @@ export default function SkillPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {comments.map((c: any) => (
             <div key={c.id} style={{ display: 'flex', gap: '0.75rem', padding: '1rem', background: 'white', borderRadius: 12, border: '1px solid var(--cream)' }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: c.author?.avatar_color || '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+              {/* FIX: fallback color for comment author avatar */}
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: c.author?.avatar_color ?? '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
                 {c.author?.name?.charAt(0)}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
                   <span style={{ fontSize: '0.87rem', fontWeight: 600, color: 'var(--ink)' }}>{c.author?.name}</span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                    {/* FIX: guard against invalid date crashing formatDistanceToNow */}
+                    {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ''}
                   </span>
                   {user?.id === c.author?.id && (
                     <button onClick={() => deleteCommentMutation.mutate(c.id)}

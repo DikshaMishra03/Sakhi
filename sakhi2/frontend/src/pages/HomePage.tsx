@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { skillsApi } from '@/lib/api';
 import SkillCard from '@/components/skills/SkillCard';
 
@@ -10,6 +10,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   earning: '#4A7C59', garden: '#4A7C59',
 };
 
+// FIX: helper to safely extract a plain string from name/emoji that may be object or string
+function toStr(value: any, fallback = ''): string {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    return (value.en ?? value.hi ?? (Object.values(value)[0] as string) ?? fallback);
+  }
+  return String(value);
+}
+
 export default function HomePage() {
   const { data: featuredData } = useQuery({ queryKey: ['featured'], queryFn: () => skillsApi.getFeatured() });
   const { data: statsData } = useQuery({ queryKey: ['stats'], queryFn: () => skillsApi.getStats() });
@@ -18,7 +28,14 @@ export default function HomePage() {
 
   const featured = featuredData?.data?.data || [];
   const stats = statsData?.data?.data || {};
-  const categories = categoriesData?.data?.data || [];
+
+  // FIX: normalise name and emoji so they are always plain strings before rendering
+  const categories = (categoriesData?.data?.data || []).map((c: any) => ({
+    ...c,
+    name: toStr(c.name, c.id),
+    emoji: toStr(c.emoji, '📚'),
+  }));
+
   const recentSkills = recentData?.data?.data || [];
 
   return (
@@ -52,7 +69,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Hero floating cards */}
+        {/* Hero floating cards — static demo data, always strings, no risk */}
         <div className="animate-fade-up delay-200" style={{ position: 'relative', height: 440 }}>
           {[
             { style: { top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 260, zIndex: 3, background: 'white' }, emoji: '🍛', cat: 'Kitchen', title: "Dal tadka the way my Nani made it", author: 'Sunita, Lucknow', saves: '1,204', color: '#E8621A' },
@@ -73,7 +90,7 @@ export default function HomePage() {
       <div style={{ background: 'var(--ink)', padding: '2.5rem 2rem' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 'clamp(2rem, 6vw, 5rem)', flexWrap: 'wrap' }}>
           {[
-            { n: stats.total_skills ? `${(stats.total_skills).toLocaleString()}+` : '8+', label: 'Skills shared' },
+            { n: stats.total_skills ? `${Number(stats.total_skills).toLocaleString()}+` : '8+', label: 'Skills shared' },
             { n: stats.cities ? `${stats.cities}+` : '7+', label: 'Cities' },
             { n: stats.languages ? `${stats.languages}` : '5+', label: 'Languages' },
             { n: stats.total_users ? `${stats.total_users}+` : '8+', label: 'Women sharing' },
@@ -108,9 +125,11 @@ export default function HomePage() {
             }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = CATEGORY_COLORS[cat.id] || 'var(--saffron)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--cream)'; e.currentTarget.style.transform = 'none'; }}>
+              {/* FIX: emoji and name are always strings after normalisation above */}
               <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>{cat.emoji}</div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.15rem' }}>{cat.name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>{cat.count} skills</div>
+              {/* FIX: guard count — never render null/undefined directly */}
+              <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>{cat.count ?? 0} skills</div>
             </Link>
           ))}
         </div>

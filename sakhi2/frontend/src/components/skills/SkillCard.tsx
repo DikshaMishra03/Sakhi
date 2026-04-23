@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, Eye, Clock } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Skill } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -20,8 +20,17 @@ interface Props {
 }
 
 export default function SkillCard({ skill, featured = false }: Props) {
-  const cat = CATEGORY_COLORS[skill.category] || { bg: '#F5EFE5', text: '#7A6C60', emoji: '✨' };
-  const timeAgo = formatDistanceToNow(new Date(skill.created_at), { addSuffix: true });
+  // FIX: category can be an object (nested API shape) — normalise to string key
+  const categoryKey: string = typeof skill.category === 'object'
+    ? (skill.category as any)?.id ?? ''
+    : (skill.category ?? '');
+
+  const cat = CATEGORY_COLORS[categoryKey] || { bg: '#F5EFE5', text: '#7A6C60', emoji: '✨' };
+
+  // FIX: guard against invalid created_at
+  const timeAgo = skill.created_at
+    ? formatDistanceToNow(new Date(skill.created_at), { addSuffix: true })
+    : '';
 
   if (featured) {
     return (
@@ -36,7 +45,7 @@ export default function SkillCard({ skill, featured = false }: Props) {
         <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: cat.bg, color: cat.text, padding: '0.3rem 0.7rem', borderRadius: '2rem', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.9rem' }}>
-              {cat.emoji} {skill.category}
+              {cat.emoji} {categoryKey}
             </div>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', color: 'var(--ink)', lineHeight: 1.35, marginBottom: '0.6rem' }}>{skill.title}</div>
             <div style={{ fontSize: '0.87rem', color: 'var(--ink-soft)', lineHeight: 1.65 }}>{skill.subtitle}</div>
@@ -49,6 +58,9 @@ export default function SkillCard({ skill, featured = false }: Props) {
       </Link>
     );
   }
+
+  // FIX: subtitle might be undefined — guard before calling .length
+  const subtitle = skill.subtitle ?? '';
 
   return (
     <Link to={`/skills/${skill.id}`} style={{
@@ -72,27 +84,32 @@ export default function SkillCard({ skill, featured = false }: Props) {
 
       <div style={{ padding: '1.1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: cat.text, fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-          {cat.emoji} {skill.category}
-          <span style={{ color: 'var(--ink-soft)', fontWeight: 400 }}>· {skill.read_time} min</span>
+          {cat.emoji} {categoryKey}
+          {/* FIX: read_time may be undefined */}
+          <span style={{ color: 'var(--ink-soft)', fontWeight: 400 }}>· {skill.read_time ?? '—'} min</span>
         </div>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', color: 'var(--ink)', lineHeight: 1.35, marginBottom: '0.4rem', flex: 1 }}>
           {skill.title}
         </div>
+        {/* FIX: subtitle guarded above */}
         <div style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', lineHeight: 1.55, marginBottom: '0.75rem' }}>
-          {skill.subtitle.length > 85 ? skill.subtitle.slice(0, 85) + '...' : skill.subtitle}
+          {subtitle.length > 85 ? subtitle.slice(0, 85) + '...' : subtitle}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--paper-warm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', color: 'var(--ink-soft)' }}>
-            <div style={{ width: 24, height: 24, borderRadius: '50%', background: skill.author?.avatar_color || '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+            {/* FIX: avatar_color with fallback */}
+            <div style={{ width: 24, height: 24, borderRadius: '50%', background: skill.author?.avatar_color ?? '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
               {skill.author?.name?.charAt(0)}
             </div>
             <span style={{ fontWeight: 500, color: 'var(--ink-mid)' }}>{skill.author?.name?.split(' ')[0]}</span>
-            <span>· {skill.author?.city}</span>
+            {/* FIX: city is optional */}
+            {skill.author?.city && <span>· {skill.author.city}</span>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--rose)' }}>
             <Heart size={12} fill="currentColor" />
-            {skill.saves_count.toLocaleString()}
+            {/* FIX: saves_count optional chain */}
+            {skill.saves_count?.toLocaleString() ?? 0}
           </div>
         </div>
       </div>
@@ -104,17 +121,20 @@ function AuthorRow({ author, timeAgo, saves_count }: any) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--paper-warm)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', background: author?.avatar_color || '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
+        {/* FIX: avatar_color with fallback */}
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: author?.avatar_color ?? '#E8621A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>
           {author?.name?.charAt(0)}
         </div>
         <div>
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>{author?.name}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>{author?.city} · {timeAgo}</div>
+          {/* FIX: city optional */}
+          <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>{author?.city ? `${author.city} · ` : ''}{timeAgo}</div>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem', color: 'var(--rose)' }}>
         <Heart size={14} fill="currentColor" />
-        {saves_count?.toLocaleString()}
+        {/* FIX: optional chain */}
+        {saves_count?.toLocaleString() ?? 0}
       </div>
     </div>
   );
