@@ -56,8 +56,15 @@ export default function WritePage() {
     if (!user) navigate('/login');
   }, [user]);
 
+  // FIX: normalise payload — tags must be an array, empty region omitted
+  const buildPayload = () => ({
+    ...form,
+    tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+    region: form.region || undefined,
+  });
+
   const createMutation = useMutation({
-    mutationFn: () => skillsApi.create(form as any),
+    mutationFn: () => skillsApi.create(buildPayload() as any),
     onSuccess: (res) => {
       toast.success('Skill published! 🎉');
       qc.invalidateQueries({ queryKey: ['skills'] });
@@ -67,7 +74,7 @@ export default function WritePage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => skillsApi.update(id!, form as any),
+    mutationFn: () => skillsApi.update(id!, buildPayload() as any),
     onSuccess: () => {
       toast.success('Skill updated!');
       qc.invalidateQueries({ queryKey: ['skill', id] });
